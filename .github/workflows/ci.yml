@@ -105,7 +105,7 @@ jobs:
             ${{ github.workspace }}/packages/*.deb
       - name: Publish Debug artifact - Fishhook
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: sslkillswitch3-debug
           path: |
