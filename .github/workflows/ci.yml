@@ -28,11 +28,6 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-        
-      # - name: Update submodules
-      #   run: |
-      #     git submodule update --init --recursive
-      #     git submodule update --remote
 
       ################################################
       ### Setup Theos environment
@@ -40,8 +35,8 @@ jobs:
       - name: Theos Setup (Check Cache)
         id: verify-cache
         run: |
-          #echo "::set-output name=heads::`git ls-remote https://github.com/theos/theos | head -n 1 | cut -f 1`-`git ls-remote https://github.com/xybp888/iOS-SDKs | head -n 1 | cut -f 1`"
-          echo "::set-output name=heads::`git ls-remote https://github.com/roothide/theos | head -n 1 | cut -f 1`-`git ls-remote https://github.com/xybp888/iOS-SDKs | head -n 1 | cut -f 1`"
+          HEADS="`git ls-remote https://github.com/roothide/theos | head -n 1 | cut -f 1`-`git ls-remote https://github.com/xybp888/iOS-SDKs | head -n 1 | cut -f 1`"
+          echo "heads=$HEADS" >> $GITHUB_OUTPUT
 
       - name: Theos Setup (Use Cache)
         id: cache
@@ -70,6 +65,7 @@ jobs:
           DYLD_INSERT_LIBRARIES=$PWD/.theos/obj/macosx/debug/SSLKillSwitch2.dylib ./SSLKillSwitchTests/.theos/obj/macosx/debug/SSLKillSwitchTest
           set +x
           echo "Test Successful!"
+
       - name: Cleanup
         run: |
           make clean
@@ -80,34 +76,39 @@ jobs:
         run: |
           make clean
           make package
+          
       - name: Build Debug package - Rootless Substrate
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: |
           make clean
           make package ROOTLESS=1
+          
       - name: Build Debug package - Roothide Substrate
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: |
           make clean
           make package ROOTHIDE=1
+          
       - name: Build Debug package - Fishhook
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: |
           make clean
           make FISHHOOK=1
+          
       # We have to split into two call because actions/upload-artifact will use common ancestor if multi path given
       - name: Publish Debug artifact - Substrate
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
-          name: sslkillswitch3-debug
+          name: sslkillswitch3-substrate-debug  # <--- CAMBIADO
           path: |
             ${{ github.workspace }}/packages/*.deb
+            
       - name: Publish Debug artifact - Fishhook
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
-          name: sslkillswitch3-debug
+          name: sslkillswitch3-fishhook-debug   # <--- CAMBIADO
           path: |
             ${{ github.workspace }}/.theos/obj/debug/*.dylib
 
@@ -122,18 +123,21 @@ jobs:
           make clean
           TAGNAME=${{ steps.tag.outputs.tag }}
           make package FINALPACKAGE=1 PACKAGE_VERSION=${TAGNAME#v}+rootful
+          
       - name: Build Release package - Rootless Substrate
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
           make clean
           TAGNAME=${{ steps.tag.outputs.tag }}
           make package ROOTLESS=1 FINALPACKAGE=1 PACKAGE_VERSION=${TAGNAME#v}+rootless
-      - name: Build Release package - Rootless Substrate
+          
+      - name: Build Release package - Roothide Substrate
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
           make clean
           TAGNAME=${{ steps.tag.outputs.tag }}
           make package ROOTHIDE=1 FINALPACKAGE=1 PACKAGE_VERSION=${TAGNAME#v}+roothide
+          
       - name: Build Release package - Fishhook
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
